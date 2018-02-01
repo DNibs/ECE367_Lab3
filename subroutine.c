@@ -60,8 +60,8 @@ void ConnectedNeighbors(
 	    Tabs = fabs(Ts);
 	    
 	    if (Tabs <= T) {
-	      c[i].m = r[i].m;
-	      c[i].n = r[i].n;
+	      c[M].m = r[i].m;
+	      c[M].n = r[i].n;
 	      *M++;
 	    }
 	    
