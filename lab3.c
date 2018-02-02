@@ -18,11 +18,30 @@ int main(int argc, char **argv) {
   double T;
   int width;
   int height;
-  struct pixel c[4];
 
   int ClassLabel;
   unsigned int **seg;
   int *NumConPixels;
+  int NumPix = 0;
+  NumConPixels = &NumPix;
+  int i = 0;
+  int m = 0;
+  int n = 0;
+
+
+  // allocate mem for 2d array seg
+  // seg indicates connected pixels, such that seg[m][n] = 1
+  seg = malloc(sizeof(*seg * width));
+  for(m=0; m<width; m++) {
+    seg[m] = malloc(sizeof(**seg * height));
+  }
+
+  // set seg to 0 for all elements
+  for (m=0; m<width; m++) {
+    for (n=0; n<height; n++) {
+      seg[m][n] = 0;
+    }
+  }
 
   
 
@@ -50,15 +69,27 @@ int main(int argc, char **argv) {
   fclose ( fp );
 
   /* check the type of image data */
-  if ( input_img.TIFF_type != 'c' ) {
-    fprintf ( stderr, "error:  image must be 24-bit color\n" );
+  if ( input_img.TIFF_type != 'g' ) {
+    fprintf ( stderr, "error:  image must be grayscale\n" );
     exit ( 1 );
   }
   //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  // intialize 2d array for Ys, all elements =0
-  // requires malloc for Ys array
-  
 
+
+
+  // Set seed
+  s.m = 67;
+  s.n = 45;
+
+  // Threshhold Value
+  T = 2;
+
+  // value of connected pixels
+  ClassLabel = 1;
+
+  NumConPixels = ConnectedSet(s, T, input_img, width, height, ClassLabel, seg, &NumConPixels);
+
+  
 
 
 
@@ -66,11 +97,24 @@ int main(int argc, char **argv) {
   /* set up structure for output achromatic image */
   /* to allocate a full color image use type 'c' */
   get_TIFF ( &output_img, input_img.height, input_img.width, 'g' );
+  //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
+  
+  // copy connected pixels to new image
+  // set connected pixel value to 150
+  // ****** try dif values to see how img looks
+  for (m=0; m<width; m++) {
+    for (n=0; n<height; n++) {
+      output_img[m][n] = seg[m][n] * 150;
+    }
+  }
+
+
+  //--------------------------------------------------
     /* open output image file */
   if ( ( fp = fopen ( "output.tif", "wb" ) ) == NULL ) {
-    fprintf ( stderr, "cannot open file green.tif\n");
+    fprintf ( stderr, "cannot open file output.tif\n");
     exit ( 1 );
   }
 
@@ -80,15 +124,20 @@ int main(int argc, char **argv) {
     exit ( 1 );
   }
 
-  /* close green image file */
+  /* close output image file */
   fclose ( fp );
 
 
   /* de-allocate space which was used for the images */
   free_TIFF ( &(input_img) );
-  free_TIFF ( &(green_img) );
+  free_TIFF ( &(output_img) );
   //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  // Will also need to free memory from Ys array
+  
+  for (m=0; m<width; m++) {
+    free(seg[m]);
+  }
+  free(seg);
+  
 
   return EXIT_SUCCESS:
 }
