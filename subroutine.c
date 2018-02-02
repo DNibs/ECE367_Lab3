@@ -87,9 +87,39 @@ void ConnectedSet(
 		  unsigned int **seg,
 		  int *NumConPixels) {
   //***
+  struct pixel B[90000]; // non-searched connected pixels (think border)
+  int BCount = 0; // count of non-searched connected pixels
+  int *M = NULL;
+  int nConnects = 0; // number of connected neighbors to s 
+  M = &nConnects;
+  struct pixel c[4]; // connected neighbors to s
+  int i = 0;
 
+  B[0] = s; // B is set to seed
+  BCount ++;
 
+  while (BCount > 0) {
+    s = B[BCount-1]; // take from top of list of B like a stack
+    BCount--; // since we're searching s, BCount removes one from list
 
+    c = ConnectedNeighbors(s, T, img, width, height, M, c);
+    // possible error: c is an array, so this might not work?
+    // does c need to be passed, or can it be generated in lower func?
+    // following the lab format but might not be necessary
+    // perhaps make c a pointer to an array and pass pointer
+
+    for(i=0; i<*M; i++) {
+      if (seg[c[i].m][c[i].n] == 0) {
+	seg[c[i].m][c[i].n] = 1;
+	*NumConPixels++;
+	B[BCount] = c[i];
+	BCount++;
+      }
+    }
+
+  }
+
+  
   //***
   return *NumConPixels;
 }
