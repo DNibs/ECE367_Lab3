@@ -1,18 +1,17 @@
 # For Linux or any machines with gcc compiler
-CFLAGS = -std=c99 -g -Wall -Wshadow --pedantic -Wvla -Werror
-GCC = gcc $(CFLAGS)
-SRCS = allocate.c subroutine.c tiff.c Lab3.c
+CC = gcc
+CFLAGS = -std=c99 -Wall -pedantic -g
 
-OBJ = $(SRCS:%.c=%.o)
+# For SunOS
+#CFLAGS = -Aa
 
-Lab3: $(OBJ) 
-	$(GCC) $(CFLAGS) $(OBJ) -o Lab3
-
-
-.c.o:
-	$(GCC) $(FLAGS) -c $*.c
-
-
+all: lab3
 
 clean:
-	/bin/rm *.o Lab3
+	/bin/rm *.o lab3
+
+OBJ = tiff.o allocate.o randlib.o subroutine.o
+
+lab3: lab3.o $(OBJ) 
+	$(CC) $(CFLAGS) -o lab3 lab3.o $(OBJ) -lm -g
+

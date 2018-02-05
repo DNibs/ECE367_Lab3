@@ -6,6 +6,8 @@
 #include "allocate.h"
 #include "tiff.h"
 #include "typeutil.h"
+#include "randlib.h"
+#include "subroutine.h"
 //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
@@ -13,27 +15,25 @@
 
 int main(int argc, char **argv) {
 
-  int *M=0;
   struct pixel s;
   double T;
-  int width;
-  int height;
+  int width=384; // manually pulled from img data
+  int height=256; // manually pulled from img data
 
   int ClassLabel;
-  unsigned int **seg;
+  int **seg;
   int *NumConPixels;
   int NumPix = 0;
   NumConPixels = &NumPix;
-  int i = 0;
   int m = 0;
   int n = 0;
 
 
   // allocate mem for 2d array seg
   // seg indicates connected pixels, such that seg[m][n] = 1
-  seg = malloc(sizeof(*seg * width));
+  seg = malloc(sizeof(*seg) * width);
   for(m=0; m<width; m++) {
-    seg[m] = malloc(sizeof(**seg * height));
+    seg[m] = malloc(sizeof(**seg) * height);
   }
 
   // set seg to 0 for all elements
@@ -48,10 +48,11 @@ int main(int argc, char **argv) {
 //-------------------------------------------------------
   FILE *fp;
   struct TIFF_img input_img, output_img;
-  double **img1,**img2;
-  int32_t i,j,pixel;
+  double **img1;
 
-  if ( argc != 2 ) error( argv[0] );
+  if ( argc != 2 ){
+    fprintf(stderr, "Not enough arguments\n");
+  }
 
   /* open image file */
   if ( ( fp = fopen ( argv[1], "rb" ) ) == NULL ) {
@@ -76,18 +77,28 @@ int main(int argc, char **argv) {
   //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
+  img1 = (double **)get_img(input_img.height+2,input_img.width+2,sizeof(double));
+
+  for (m=0; m<width; m++) {
+    for (n=0; n<height; n++) {
+      img1[m+1][n+1] = input_img.mono[n][m]; // switched ht/wt conventions******
+    }
+  }
 
   // Set seed
   s.m = 67;
   s.n = 45;
 
   // Threshhold Value
-  T = 2;
+  T = 1;
 
   // value of connected pixels
   ClassLabel = 1;
 
-  NumConPixels = ConnectedSet(s, T, input_img, width, height, ClassLabel, seg, &NumConPixels);
+  // Find all connected pixels
+  // might need to set equal to NumConPixels****************
+  // If so, change func delcarations and definition***********
+  ConnectedSet(s, T, img1, width, height, ClassLabel, seg, NumConPixels);
 
   
 
@@ -106,7 +117,7 @@ int main(int argc, char **argv) {
   // ****** try dif values to see how img looks
   for (m=0; m<width; m++) {
     for (n=0; n<height; n++) {
-      output_img[m][n] = seg[m][n] * 150;
+      output_img.mono[n][m] = seg[m][n] * 150;
     }
   }
 
@@ -131,6 +142,7 @@ int main(int argc, char **argv) {
   /* de-allocate space which was used for the images */
   free_TIFF ( &(input_img) );
   free_TIFF ( &(output_img) );
+  free_img( (void**)img1);
   //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   
   for (m=0; m<width; m++) {
@@ -139,7 +151,7 @@ int main(int argc, char **argv) {
   free(seg);
   
 
-  return EXIT_SUCCESS:
+  return EXIT_SUCCESS;
 }
 
 
