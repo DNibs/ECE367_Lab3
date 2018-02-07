@@ -26,31 +26,20 @@ int ConnectedSet(struct pixel s, double T, double **img, int width, int height, 
     s = B[BCount-1]; // take from top of list of B like a stack
     BCount--; // since we're searching s, BCount removes one from list
 
+    // find all connected neighbors
     ConnectedNeighbors(s, T, img, width, height, M, c);
-    // possible error: c is an array, so this might not work?
-    // does c need to be passed, or can it be generated in lower func?
-    // following the lab format but might not be necessary
-    // perhaps make c a pointer to an array and pass pointer
 
-
-    //----------------------------------------------------
-
-     
+    //
     for(i=0; i<*M; i++) {
-      if (c[i].m >0){
-	if(c[i].n > 0){
-	  
-	  if (seg[c[i].m-1][c[i].n-1] == 0) {
 
-	    seg[c[i].m-1][c[i].n-1] = 1;
-	    (*NumConPixels)++;
-	    B[BCount] = c[i];
-	    BCount++;
-	  }
-	}
+      if (seg[c[i].m][c[i].n] == 0) {
+
+	seg[c[i].m][c[i].n] = 1;
+	(*NumConPixels)++;
+	B[BCount] = c[i];
+	BCount++;
       }
     }
-
   }
 
   free(c);
