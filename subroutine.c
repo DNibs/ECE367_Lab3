@@ -5,7 +5,7 @@
 
 
 // Define functions
-void ConnectedSet(struct pixel s, double T, double **img, int width, int height, int ClassLabel, int **seg, int *NumConPixels) {
+int ConnectedSet(struct pixel s, double T, double **img, int width, int height, int ClassLabel, int **seg, int *NumConPixels) {
   //***
   struct pixel B[90000]; // non-searched connected pixels (think border)
   int BCount = 0; // count of non-searched connected pixels
@@ -37,12 +37,17 @@ void ConnectedSet(struct pixel s, double T, double **img, int width, int height,
 
      
     for(i=0; i<*M; i++) {
-      if (seg[c[i].m-1][c[i].n-1] == 0) {
+      if (c[i].m >0){
+	if(c[i].n > 0){
+	  
+	  if (seg[c[i].m-1][c[i].n-1] == 0) {
 
-	seg[c[i].m-1][c[i].n-1] = 1;
-	(*NumConPixels)++;
-	B[BCount] = c[i];
-	BCount++;
+	    seg[c[i].m-1][c[i].n-1] = 1;
+	    (*NumConPixels)++;
+	    B[BCount] = c[i];
+	    BCount++;
+	  }
+	}
       }
     }
 
@@ -51,7 +56,7 @@ void ConnectedSet(struct pixel s, double T, double **img, int width, int height,
   free(c);
   free(M);
   //***
-  return; // Should this return number of connected pixels?****
+  return *NumConPixels; // Should this return number of connected pixels?****
 }
 
 
@@ -67,38 +72,42 @@ void ConnectedSet(struct pixel s, double T, double **img, int width, int height,
 
   *M = 0;
 
-  r[0].m = s.m-1;
-  r[0].n = s.n;
+  // define neighbors
+  // test boundary conditions to avoid segfault
+  if(s.m > 0){
+    r[0].m = s.m-1;
+    r[0].n = s.n;
+  }
+  
+  if(s.n < height) {
+    r[1].m = s.m;
+    r[1].n = s.n+1;
+  }
 
-  r[1].m = s.m;
-  r[1].n = s.n+1;
+  if(s.m < width) {
+    r[2].m = s.m+1;
+    r[2].n = s.n;
+  }
 
-  r[2].m = s.m+1;
-  r[2].n = s.n;
+  if(s.n > 0) {
+    r[3].m = s.m;
+    r[3].n = s.n-1;
+  }
 
-  r[3].m = s.m;
-  r[3].n = s.n-1;
-
+  // test each neighbor for threshold
+  // If neighbor under threshold, iterate M to
+  // signify new connected pixel
   for (i=0; i<4; i++) {
     
-    if(r[i].m >= 0) {
-      if (r[i].m <= width) {
-	if (r[i].n >= 0) {
-	  if (r[i].n <= height) {
+    Ts = img[r[i].m][r[i].n] - img[s.m][s.n];
+    Tabs = fabs(Ts);
 	    
-	    Ts = img[r[i].m][r[i].n] - img[s.m][s.n];
-	    Tabs = fabs(Ts);
-	    
-	    if (Tabs <= T) {
-	      c[*M].m = r[i].m;
-	      c[*M].n = r[i].n;
-	      (*M)++;
-	    }
-	    
-	  }
-	}
-      }
+    if (Tabs <= T) {
+      c[*M].m = r[i].m;
+      c[*M].n = r[i].n;
+      (*M)++;
     }
+
     
   }
     

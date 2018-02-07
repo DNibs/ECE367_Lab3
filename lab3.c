@@ -77,11 +77,11 @@ int main(int argc, char **argv) {
   //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
-  img1 = (double **)get_img(input_img.height+2,input_img.width+2,sizeof(double));
+  img1 = (double **)get_img(input_img.height,input_img.width,sizeof(double));
 
   for (m=0; m<width; m++) {
     for (n=0; n<height; n++) {
-      img1[m+1][n+1] = input_img.mono[n][m]; // switched ht/wt conventions******
+      img1[m][n] = input_img.mono[n][m]; // switched ht/wt conventions******
     }
   }
 
@@ -90,17 +90,17 @@ int main(int argc, char **argv) {
   s.n = 45;
 
   // Threshhold Value
-  T = 1;
+  T = 2;
 
   // value of connected pixels
   ClassLabel = 1;
 
   // Find all connected pixels
-  // might need to set equal to NumConPixels****************
-  // If so, change func delcarations and definition***********
-  ConnectedSet(s, T, img1, width, height, ClassLabel, seg, NumConPixels);
+  // save connected pixels to img1, where each connected pixel
+  // equals the ClassLabel
+  *NumConPixels = ConnectedSet(s, T, img1, width, height, ClassLabel, seg, NumConPixels);
 
-  
+  //fprintf(stderr, "NumConPixels %d\n", *NumConPixels);
 
 
 
@@ -117,7 +117,7 @@ int main(int argc, char **argv) {
   // ****** try dif values to see how img looks
   for (m=0; m<width; m++) {
     for (n=0; n<height; n++) {
-      output_img.mono[n][m] = seg[m][n] * 150;
+      output_img.mono[n][m] = seg[m][n] * 250;
     }
   }
 
