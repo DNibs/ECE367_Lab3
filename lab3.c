@@ -22,11 +22,15 @@ int main(int argc, char **argv) {
 
   int ClassLabel;
   int **seg;
+  int **imgcomp;
   int *NumConPixels;
   int NumPix = 0;
   NumConPixels = &NumPix;
   int m = 0;
   int n = 0;
+  int mm = 0;
+  int nn = 0;
+  int compindex = 0;
 
 
   // allocate mem for 2d array seg
@@ -40,6 +44,22 @@ int main(int argc, char **argv) {
   for (m=0; m<width; m++) {
     for (n=0; n<height; n++) {
       seg[m][n] = 0;
+    }
+  }
+
+
+   // allocate mem for 2d array 
+  // imgcomp is the composite for seg applied over every pixel
+  // only seg > 100 pixels will be included
+  imgcomp = malloc(sizeof(*imgcomp) * width);
+  for(m=0; m<width; m++) {
+    imgcomp[m] = malloc(sizeof(**imgcomp) * height);
+  }
+
+  // set seg to 0 for all elements
+  for (m=0; m<width; m++) {
+    for (n=0; n<height; n++) {
+      imgcomp[m][n] = 0;
     }
   }
 
@@ -76,32 +96,60 @@ int main(int argc, char **argv) {
   }
   //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-
+  // allocate the "working image", copied from input tiff
   img1 = (double **)get_img(input_img.height,input_img.width,sizeof(double));
 
   for (m=0; m<width; m++) {
     for (n=0; n<height; n++) {
-      img1[m][n] = input_img.mono[n][m]; // switched ht/wt conventions******
+      img1[m][n] = input_img.mono[n][m]; // switched ht/wt conventions
     }
   }
 
   // Set seed
-  s.m = 67;
-  s.n = 45;
+  s.m = 0;
+  s.n = 0;
 
   // Threshhold Value
-  T = 2;
+  T = 3;
 
   // value of connected pixels
   ClassLabel = 1;
 
+  for (m=0; m<width; m++) { // TESTING M INIT CHANGE FOR FINAL!!!!!
+    fprintf(stderr, "%d / 384\n", s.m); //*********************************
+    for (n=0; n<height; n++) {
+      s.m = m;
+      s.n = n;
+
   // Find all connected pixels
-  // save connected pixels to img1, where each connected pixel
+  // save connected pixels to seg, where each connected pixel
   // equals the ClassLabel
-  *NumConPixels = ConnectedSet(s, T, img1, width, height, ClassLabel, seg, NumConPixels);
+      if(seg[m][n] == 0) {
+	*NumConPixels = 0;
+	*NumConPixels = ConnectedSet(s, T, img1, width, height, ClassLabel, seg, NumConPixels);
 
-  //fprintf(stderr, "NumConPixels %d\n", *NumConPixels);
+	if( *NumConPixels > 100) {
+	  compindex++;
+	  for (mm=0; mm<width; mm++) {
+	    for (nn=0; nn<height; nn++) {
 
+	      //add segments to composition
+	      //without reseting alread allocated
+	      //segments
+	      if (imgcomp[mm][nn] == 0) {
+		imgcomp[mm][nn] = seg[mm][nn]*(compindex+1);
+	      }
+	      // reset seg to avoid spillage from other sets
+	    }
+	  }
+	}
+      }
+    }
+  }
+
+	   
+	      
+  fprintf(stderr, "compindex %d\n", compindex);
 
 
   //------------------------------------------------------
@@ -117,14 +165,14 @@ int main(int argc, char **argv) {
   // ****** try dif values to see how img looks
   for (m=0; m<width; m++) {
     for (n=0; n<height; n++) {
-      output_img.mono[n][m] = seg[m][n] * 250;
+      output_img.mono[n][m] = imgcomp[m][n] * 10;
     }
   }
 
 
   //--------------------------------------------------
     /* open output image file */
-  if ( ( fp = fopen ( "output.tif", "wb" ) ) == NULL ) {
+  if ( ( fp = fopen ( "segmentation.tif", "wb" ) ) == NULL ) {
     fprintf ( stderr, "cannot open file output.tif\n");
     exit ( 1 );
   }
@@ -149,6 +197,12 @@ int main(int argc, char **argv) {
     free(seg[m]);
   }
   free(seg);
+
+
+  for (m=0; m<width; m++) {
+    free(imgcomp[m]);
+  }
+  free(imgcomp);
   
 
   return EXIT_SUCCESS;
