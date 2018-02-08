@@ -18,6 +18,7 @@ int ConnectedSet(struct pixel s, double T, double **img, int width, int height, 
   M = malloc(sizeof(*M) *4);
 
   c = malloc(sizeof(*c) * 4);
+  BCount = 0;
 
   B[0] = s; // B is set to seed
   BCount ++;
@@ -34,14 +35,14 @@ int ConnectedSet(struct pixel s, double T, double **img, int width, int height, 
 
       if (seg[c[i].m][c[i].n] == 0) {
 
-	seg[c[i].m][c[i].n] = 1;
+	seg[c[i].m][c[i].n] = ClassLabel;
 	(*NumConPixels)++;
 	B[BCount] = c[i];
 	BCount++;
       }
     }
   }
-
+  
   free(c);
   free(M);
   //***
@@ -56,50 +57,68 @@ int ConnectedSet(struct pixel s, double T, double **img, int width, int height, 
 
   double Ts; // tested threshold value
   double Tabs; // absolute value of threshold test
-  struct pixel r[4]; // Pixels for all neighbors, connected or not
-  int i=0;
+  struct pixel r; // Pixels for all neighbors, connected or not
 
   *M = 0;
 
   // define neighbors
   // test boundary conditions to avoid segfault
   if(s.m > 0){
-    r[0].m = s.m-1;
-    r[0].n = s.n;
-  }
-  
-  if(s.n < height) {
-    r[1].m = s.m;
-    r[1].n = s.n+1;
-  }
+    r.m = s.m-1;
+    r.n = s.n;
 
-  if(s.m < width) {
-    r[2].m = s.m+1;
-    r[2].n = s.n;
-  }
-
-  if(s.n > 0) {
-    r[3].m = s.m;
-    r[3].n = s.n-1;
-  }
-
-  // test each neighbor for threshold
-  // If neighbor under threshold, iterate M to
-  // signify new connected pixel
-  for (i=0; i<4; i++) {
-    
-    Ts = img[r[i].m][r[i].n] - img[s.m][s.n];
+    Ts = img[r.m][r.n] - img[s.m][s.n];
     Tabs = fabs(Ts);
 	    
     if (Tabs <= T) {
-      c[*M].m = r[i].m;
-      c[*M].n = r[i].n;
+      c[*M].m = r.m;
+      c[*M].n = r.n;
       (*M)++;
     }
-
-    
   }
-    
   
+  if(s.n < height-1) {
+    r.m = s.m;
+    r.n = s.n+1;
+
+    Ts = img[r.m][r.n] - img[s.m][s.n];
+    Tabs = fabs(Ts);
+	    
+    if (Tabs <= T) {
+      c[*M].m = r.m;
+      c[*M].n = r.n;
+      (*M)++;
+    }
+  }
+
+  if(s.m < width-1) {
+    r.m = s.m+1;
+    r.n = s.n;
+
+    Ts = img[r.m][r.n] - img[s.m][s.n];
+    Tabs = fabs(Ts);
+	    
+    if (Tabs <= T) {
+      c[*M].m = r.m;
+      c[*M].n = r.n;
+      (*M)++;
+    }
+  }
+
+  if(s.n > 0) {
+    r.m = s.m;
+    r.n = s.n-1;
+
+    Ts = img[r.m][r.n] - img[s.m][s.n];
+    Tabs = fabs(Ts);
+	    
+    if (Tabs <= T) {
+      c[*M].m = r.m;
+      c[*M].n = r.n;
+      (*M)++;
+    }
+  }
+
+
   return;
 }
