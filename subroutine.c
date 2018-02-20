@@ -9,16 +9,18 @@ int ConnectedSet(struct pixel s, double T, double **img, int width, int height, 
   //***
   struct pixel B[90000]; // non-searched connected pixels (think border)
   int BCount = 0; // count of non-searched connected pixels
-  int *M = NULL;
-  int nConnects = 0; // number of connected neighbors to s 
-  M = &nConnects;
-  struct pixel *c; // connected neighbors to s
   int i = 0;
 
-  M = malloc(sizeof(*M) *4);
+  int * M = malloc(sizeof(*M) *4);
+  if (M == NULL) {
+    fprintf(stderr, "fail M malloc");
+  }
 
-  c = malloc(sizeof(*c) * 4);
-  BCount = 0;
+  struct pixel * c = malloc(sizeof(*c) * 4);
+  if (c == NULL) {
+    fprintf(stderr, "fail c malloc");
+  }
+  
 
   B[0] = s; // B is set to seed
   BCount ++;
@@ -31,7 +33,7 @@ int ConnectedSet(struct pixel s, double T, double **img, int width, int height, 
     ConnectedNeighbors(s, T, img, width, height, M, c);
 
     //
-    for(i=0; i<*M; i++) {
+    for(i=0; i<(*M); i++) {
 
       if (seg[c[i].m][c[i].n] == 0) {
 
@@ -45,8 +47,8 @@ int ConnectedSet(struct pixel s, double T, double **img, int width, int height, 
   
   free(c);
   free(M);
-  //***
-  return *NumConPixels; // Should this return number of connected pixels?****
+
+  return *NumConPixels; 
 }
 
 

@@ -22,15 +22,20 @@ int main(int argc, char **argv) {
 
   int ClassLabel;
   int **seg;
-  int **imgcomp;
-  int *NumConPixels;
+  int ***imgcomp; //3d array for compositing segments
+  int *NumConPixels; // number of connected pixels in each segment
   int NumPix = 0;
   NumConPixels = &NumPix;
   int m = 0;
   int n = 0;
   int mm = 0;
   int nn = 0;
-  int compindex = 0;
+  int k = 0;
+  int seedtest = 0;
+  int compindex = 0; // number of segments with +100 connected pixels
+  int numimg = 255; // number of images that make up composition
+  //i.e. the number of connected sets
+  //int segind = strtol(argv[2], NULL, 10); //*********************************
 
 
   // allocate mem for 2d array seg
@@ -40,29 +45,28 @@ int main(int argc, char **argv) {
     seg[m] = malloc(sizeof(**seg) * height);
   }
 
-  // set seg to 0 for all elements
-  for (m=0; m<width; m++) {
-    for (n=0; n<height; n++) {
-      seg[m][n] = 0;
-    }
-  }
-
-
-   // allocate mem for 2d array 
+  // allocate mem for 3d array 
   // imgcomp is the composite for seg applied over every pixel
   // only seg > 100 pixels will be included
-  imgcomp = malloc(sizeof(*imgcomp) * width);
-  for(m=0; m<width; m++) {
-    imgcomp[m] = malloc(sizeof(**imgcomp) * height);
-  }
+  imgcomp = malloc(sizeof(**imgcomp) * numimg);
+  
+  for (k=0; k<numimg; k++) {
+    imgcomp[k] = malloc(sizeof(*imgcomp) * width);
 
-  // set seg to 0 for all elements
-  for (m=0; m<width; m++) {
-    for (n=0; n<height; n++) {
-      imgcomp[m][n] = 0;
+    for(m=0; m<width; m++) {
+      imgcomp[k][m] = malloc(sizeof(imgcomp) * height);
     }
   }
 
+  // set seg to 0 for all elements
+  for (k=0; k<numimg; k++) {
+    for (m=0; m<width; m++) {
+      for (n=0; n<height; n++) {
+	imgcomp[k][m][n] = 0;
+      }
+    }
+  }
+ 
   
 
 //-------------------------------------------------------
@@ -70,7 +74,7 @@ int main(int argc, char **argv) {
   struct TIFF_img input_img, output_img;
   double **img1;
 
-  if ( argc != 2 ){
+  if ( argc != 3 ){
     fprintf(stderr, "Not enough arguments\n");
   }
 
@@ -115,31 +119,44 @@ int main(int argc, char **argv) {
   // value of connected pixels
   ClassLabel = 1;
 
-  for (m=0; m<width; m++) { // TESTING M INIT CHANGE FOR FINAL!!!!!
-    fprintf(stderr, "%d / 384\n", s.m); //*********************************
+  for (m=0; m<width; m++) {
+    fprintf(stderr, " %d / 383\n", m);
     for (n=0; n<height; n++) {
+      // move seed across img to get new connected sets
       s.m = m;
       s.n = n;
 
-  // Find all connected pixels
-  // save connected pixels to seg, where each connected pixel
-  // equals the ClassLabel
-      if(seg[m][n] == 0) {
-	*NumConPixels = 0;
+      //reset seg
+      for (nn=0; nn<height; nn++) {
+	for (mm=0; mm<width; mm++) {
+	  seg[mm][nn] = 0;
+	}
+      }
+      
+      // test if seed is already part of connected set
+      // set seedtest to 0 after first iteration
+      seedtest = 0;
+      *NumConPixels = 0;
+      
+      for (k=0; k<numimg; k++) {
+	if (imgcomp[k][m][n] != 0) {
+	  seedtest++;
+	}
+      }
+
+      // if seed not already in set, find new connected set
+      if(seedtest == 0) {
 	*NumConPixels = ConnectedSet(s, T, img1, width, height, ClassLabel, seg, NumConPixels);
 
+	// if the connected set is larger than 100 pixels, save it
 	if( *NumConPixels > 100) {
 	  compindex++;
-	  for (mm=0; mm<width; mm++) {
-	    for (nn=0; nn<height; nn++) {
+	  for (nn=0; nn<height; nn++) {
+	    for (mm=0; mm<width; mm++) {
 
-	      //add segments to composition
-	      //without reseting alread allocated
-	      //segments
-	      if (imgcomp[mm][nn] == 0) {
-		imgcomp[mm][nn] = seg[mm][nn]*(compindex+1);
-	      }
-	      // reset seg to avoid spillage from other sets
+	      // Save the connected set to img array
+	      imgcomp[compindex-1][mm][nn] = seg[mm][nn];
+	      
 	    }
 	  }
 	}
@@ -163,9 +180,17 @@ int main(int argc, char **argv) {
   // copy connected pixels to new image
   // set connected pixel value to 150
   // ****** try dif values to see how img looks
-  for (m=0; m<width; m++) {
-    for (n=0; n<height; n++) {
-      output_img.mono[n][m] = imgcomp[m][n] * 10;
+  /* for (m=0; m<width; m++) { */
+  /*   for (n=0; n<height; n++) { */
+  /*     output_img.mono[n][m] = imgcomp[segind][m][n] * 100; */
+  /*   } */
+  /* } */
+
+  for (k=0; k<numimg; k++) {
+    for (m=0; m<width; m++) {
+      for (n=0; n<height; n++) {
+	output_img.mono[n][m] = output_img.mono[n][m] + (imgcomp[k][m][n] * 5 * k);
+      }
     }
   }
 
@@ -198,9 +223,11 @@ int main(int argc, char **argv) {
   }
   free(seg);
 
-
-  for (m=0; m<width; m++) {
-    free(imgcomp[m]);
+  for (k=0; k<numimg; k++) {
+    for (m=0; m<width; m++) {
+      free(imgcomp[k][m]);
+    }
+    free(imgcomp[k]);
   }
   free(imgcomp);
   
